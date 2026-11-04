@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+    <title>Вход в аккаунт | Управление заявками</title>
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/css/tabler.min.css"/>
+</head>
+<body class="d-flex flex-column">
+    <div class="page page-center">
+        <div class="container container-tight py-4">
+            <div class="text-center mb-4">
+                <a href="/" class="navbar-brand navbar-brand-autodark">
+                   
+                </a>
+            </div>
+
+            <form class="card card-md" method="post" autocomplete="off">
+                {% csrf_token %}
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Вход в систему</h2>
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            <div class="d-flex">
+                                <div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                        <circle cx="12" cy="12" r="9"></circle>
+                                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                    </svg>
+                                </div>
+                                <div>
+                                    {% for error in form.non_field_errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.username.id_for_label }}">
+                            Имя пользователя
+                        </label>
+                        <input type="text"
+                               name="{{ form.username.name }}"
+                               id="{{ form.username.id_for_label }}"
+                               class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                               placeholder="Введите имя пользователя"
+                               autofocus
+                               value="{{ form.username.value|default:'' }}">
+                        {% if form.username.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.username.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.password.id_for_label }}">
+                            Пароль
+                        </label>
+                        <input type="password"
+                               name="{{ form.password.name }}"
+                               id="{{ form.password.id_for_label }}"
+                               class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+                               placeholder="Введите пароль"
+                               autocomplete="current-password">
+                        {% if form.password.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.password.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-footer">
+                        <button type="submit" class="btn btn-primary w-100">
+                            Войти
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="text-center text-secondary mt-3">
+                Нет аккаунта? <a href="{% url 'register' %}" tabindex="-1">Зарегистрироваться</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Музыкальный прокат — управление заявками</title>
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/css/tabler.min.css">
+</head>
+
+<body
+    data-user-id="{{ request.user.id }}"
+    data-is-staff="{{ request.user.is_staff|yesno:'true,false' }}"
+>
+
+<div class="page">
+    <div class="page-wrapper">
+        <div class="container-xl py-4">
+
+            <!-- Шапка -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="mb-1">Музыкальный прокат</h1>
+                    <p class="text-secondary mb-0">
+                        Центр управления заявками на выдачу инструментов
+                    </p>
+                    <p class="text-secondary mb-0">
+                        Вы вошли как {{ request.user.username }}
+                        {% if request.user.is_staff %}
+                            <span class="badge bg-blue-lt">Сотрудник</span>
+                        {% else %}
+                            <span class="badge bg-green-lt">Пользователь</span>
+                        {% endif %}
+                    </p>
+                </div>
+
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger">
+                        Выйти
+                    </button>
+                </form>
+            </div>
+
+            {% csrf_token %}
+
+            <!-- Сообщения -->
+            <div id="message"
+                 class="alert"
+                 role="status"
+                 aria-live="polite"
+                 style="display: none;">
+            </div>
+
+            <!-- Статистика -->
+            <div class="row row-cards mb-4">
+
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="subheader">Инструментов в каталоге</div>
+                            <div class="h1 mb-0" id="total-instruments">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="subheader">Доступно инструментов</div>
+                            <div class="h1 mb-0" id="available-instruments">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="subheader">Количество заявок</div>
+                            <div class="h1 mb-0" id="total-requests">0</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Каталог инструментов -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="card-title">Каталог музыкальных инструментов</h2>
+                </div>
+
+                <div class="card-body">
+                    <div id="instruments-list"
+                         class="row row-cards">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Создание заявки -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="card-title">Оформление заявки</h2>
+                </div>
+
+                <div class="card-body">
+                    <form id="instrument-request-form">
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Музыкальный инструмент
+                            </label>
+
+                            <select id="instrument"
+                                    class="form-select"
+                                    required>
+                                <option value="">
+                                    Выберите инструмент
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Количество
+                            </label>
+
+                            <input type="number"
+                                   id="quantity"
+                                   class="form-control"
+                                   min="1"
+                                   value="1"
+                                   required>
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-primary">
+                            Создать заявку
+                        </button>
+
+                    </form>
+                </div>
+            </div>
+
+            <!-- Список заявок -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Заявки на выдачу инструментов</h2>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row mb-3">
+
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label">Фильтр по статусу</label>
+
+                            <select id="status-filter" class="form-select">
+                                <option value="">Все статусы</option>
+                                <option value="new">Новые</option>
+                                <option value="approved">Одобренные</option>
+                                <option value="rejected">Отклонённые</option>
+                                <option value="returned">Возвращённые</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label">Фильтр по категории</label>
+
+                            <select id="category-filter" class="form-select">
+                                <option value="">Все категории</option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <div id="loading" hidden class="text-secondary mb-3">
+                        Загрузка данных...
+                    </div>
+
+                    <div id="requests-list"></div>
+
+                </div>
+            </div>
+
+            <!-- История событий -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h2 class="card-title">История событий</h2>
+                </div>
+
+                <div class="card-body">
+                    <div id="history-list" class="text-secondary">
+                        Выберите заявку, чтобы посмотреть её историю.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js"></script>
+<script src="{% static 'tickets/app.js' %}"></script>
+
+</body>
+</html>
