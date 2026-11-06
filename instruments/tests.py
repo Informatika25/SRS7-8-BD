@@ -17,7 +17,6 @@ REQUESTS_URL = "/api/instrument-requests/"
 
 
 class BaseInstrumentTestCase(APITestCase):
-    """Общие тестовые данные для всех сценариев."""
 
     def setUp(self):
         self.staff = User.objects.create_user(
@@ -67,7 +66,7 @@ class BaseInstrumentTestCase(APITestCase):
 
 
 class CreateRequestTests(BaseInstrumentTestCase):
-    # Проверка №1
+    # Проверка №1. Создание заявки
     def test_create_request_creates_event(self):
         self.login(self.owner)
 
@@ -91,7 +90,6 @@ class CreateRequestTests(BaseInstrumentTestCase):
             ).exists()
         )
 
-    # Проверка №8
     def test_create_request_more_than_available(self):
         self.login(self.owner)
 
@@ -107,7 +105,7 @@ class CreateRequestTests(BaseInstrumentTestCase):
 
 
 class ApproveRequestTests(BaseInstrumentTestCase):
-    # Проверка №2
+    # Проверка №2. Одобрение заявки
     def test_approve_changes_stock_status_and_history(self):
         request = self.create_request(quantity=2)
         self.login(self.staff)
@@ -128,7 +126,7 @@ class ApproveRequestTests(BaseInstrumentTestCase):
             ).exists()
         )
 
-    # Проверка №3
+    # Проверка №3. Запрещённый переход (повторное одобрение)
     def test_repeated_approve_is_rejected(self):
         request = self.create_request(quantity=2)
         self.login(self.staff)
@@ -149,7 +147,7 @@ class ApproveRequestTests(BaseInstrumentTestCase):
             events_after_first,
         )
 
-    # Проверка №6
+    # Проверка №4. Обычный пользователь не может одобрять
     def test_regular_user_cannot_approve(self):
         request = self.create_request(quantity=2)
         self.login(self.owner)
@@ -165,7 +163,7 @@ class ApproveRequestTests(BaseInstrumentTestCase):
 
 
 class RejectRequestTests(BaseInstrumentTestCase):
-    # Проверка №7
+    # Проверка №5. Отклонение заявки
     def test_reject_without_reason(self):
         request = self.create_request()
         self.login(self.staff)
@@ -235,7 +233,7 @@ class ReturnRequestTests(BaseInstrumentTestCase):
 
 
 class AccessAndEditTests(BaseInstrumentTestCase):
-    # Проверка №5
+    # Проверка №6. Права доступа, изменение и удаление заявок
     def test_other_user_cannot_see_foreign_request(self):
         request = self.create_request(owner=self.owner)
         self.login(self.other_user)
@@ -264,7 +262,7 @@ class AccessAndEditTests(BaseInstrumentTestCase):
             InstrumentRequest.objects.filter(id=request.id).exists()
         )
 
-    # Проверка №9
+    # Проверка №7. Прямая смена статуса через PATCH
     def test_patch_status_directly_is_rejected(self):
         request = self.create_request()
         self.login(self.owner)
@@ -321,7 +319,7 @@ class AccessAndEditTests(BaseInstrumentTestCase):
 
 
 class FilterTests(BaseInstrumentTestCase):
-    # Проверка №10
+    # Проверка №8. Серверные фильтры по статусу и категории
     def setUp(self):
         super().setUp()
         self.r_new_guitar = self.create_request(
@@ -358,7 +356,8 @@ class FilterTests(BaseInstrumentTestCase):
 
 
 class TransactionRollbackTest(APITestCase):
-    # Проверка №4 (ваш тест, без изменений)
+    # Проверка №9. Откат составной операции при сбое
+
     def test_approve_rollback_when_history_creation_fails(self):
         User = get_user_model()
 
@@ -367,16 +366,13 @@ class TransactionRollbackTest(APITestCase):
             password="test12345",
             is_staff=True,
         )
-
         owner = User.objects.create_user(
             username="owner_test",
             password="test12345",
         )
-
         category = InstrumentCategory.objects.create(
             name="Тестовая категория"
         )
-
         instrument = Instrument.objects.create(
             name="Тестовая гитара",
             description="Тестовый инструмент",
@@ -384,21 +380,18 @@ class TransactionRollbackTest(APITestCase):
             total_quantity=5,
             available_quantity=5,
         )
-
         request = InstrumentRequest.objects.create(
             instrument=instrument,
             owner=owner,
             quantity=2,
             status="new",
         )
-
         InstrumentRequestEvent.objects.create(
             request=request,
             initiator=owner,
             action="created",
             comment="Заявка создана",
         )
-
         events_before = InstrumentRequestEvent.objects.filter(
             request=request
         ).count()
@@ -428,3 +421,11 @@ class TransactionRollbackTest(APITestCase):
         ).count()
 
         self.assertEqual(events_after, events_before)
+
+        print("\nПроверка отката транзакции")
+        print(f"HTTP-статус ответа: {response.status_code}")
+        print(f"Доступный остаток инструмента: {instrument.available_quantity}")
+        print(f"Статус заявки: {request.status}")
+        print(f"Событий до ошибки: {events_before}")
+        print(f"Событий после ошибки: {events_after}")
+        print("Все изменения успешно отменены.")

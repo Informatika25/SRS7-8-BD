@@ -234,38 +234,30 @@ class InstrumentRequestViewSet(viewsets.ModelViewSet):
             raise PermissionDenied(
                 "Только сотрудник может оформлять возврат."
             )
-
         with transaction.atomic():
             instrument_request = self.get_object()
-
             instrument_request = InstrumentRequest.objects.select_for_update().get(
                 pk=instrument_request.pk
             )
-
             if instrument_request.status != InstrumentRequest.Status.APPROVED:
                 raise ValidationError(
                     "Можно вернуть только одобренную заявку."
                 )
-
             instrument = Instrument.objects.select_for_update().get(
                 pk=instrument_request.instrument_id
             )
-
             instrument.available_quantity += instrument_request.quantity
             instrument.save(update_fields=["available_quantity"])
-
             instrument_request.status = InstrumentRequest.Status.RETURNED
             instrument_request.processed_by = request.user
             instrument_request.processed_at = timezone.now()
             instrument_request.save()
-
             InstrumentRequestEvent.objects.create(
                 request=instrument_request,
                 initiator=request.user,
                 action=InstrumentRequestEvent.Action.RETURNED,
                 comment="Инструменты возвращены."
             )
-
         return Response(
             InstrumentRequestSerializer(instrument_request).data,
             status=status.HTTP_200_OK

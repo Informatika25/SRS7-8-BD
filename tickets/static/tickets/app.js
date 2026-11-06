@@ -2,6 +2,8 @@ const csrfToken = document.querySelector(
     "[name=csrfmiddlewaretoken]"
 ).value;
 
+let currentHistoryId = null;
+
 const currentUserId = Number(document.body.dataset.userId);
 const isStaff = document.body.dataset.isStaff === "true";
 
@@ -632,8 +634,12 @@ async function deleteRequest(requestId) {
 
         showMessage("Заявка успешно удалена.");
 
+        if (currentHistoryId === requestId) {
+        currentHistoryId = null;
+        }
+        
         historyList.textContent =
-            "Выберите заявку, чтобы посмотреть её историю.";
+        "Выберите заявку, чтобы посмотреть её историю.";
 
         await refreshPage();
 
@@ -647,6 +653,7 @@ async function deleteRequest(requestId) {
 
 // История событий
 async function loadHistory(requestId) {
+    currentHistoryId = requestId;
     try {
         const events = await apiRequest(
             `/api/instrument-requests/${requestId}/history/`
@@ -719,6 +726,10 @@ async function loadHistory(requestId) {
 async function refreshPage() {
     await loadInstruments();
     await loadRequests();
+
+    if (currentHistoryId) {
+        await loadHistory(currentHistoryId);
+    }
 }
 
 // Фильтры
